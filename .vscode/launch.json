@@ -7,9 +7,21 @@
 		{
 			"type": "chrome",
 			"request": "launch",
-			"name": "Launch Chrome against localhost",
+			"name": "Launch Front-End in Chrome",
 			"url": "http://localhost:3000",
 			"webRoot": "${workspaceFolder}"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Run Back-end",
+			"program": "${workspaceFolder}/backend/index.js"
+		}
+	],
+	"compounds": [
+		{
+			"name": "Run all",
+			"configurations": ["Run Back-end", "Launch Front-End in Chrome"]
 		}
 	]
 }

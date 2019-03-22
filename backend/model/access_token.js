@@ -1,8 +1,9 @@
 'use strict';
 
 const jwt = require('jsonwebtoken');
+const Database = require('./database.js');
 
-const COOKIE_NAME = 'reactdemo_access';
+const HEADER_NAME = 'x-auth';
 const PV_KEY = 'bush rally chocolate camera vat';
 
 exports.setAccessToken = function (res, userId)
@@ -11,7 +12,7 @@ exports.setAccessToken = function (res, userId)
 		userId: userId
 	}, PV_KEY);
 
-	res.cookie(COOKIE_NAME, token, { httpOnly: true });
+	res.header(HEADER_NAME, token);
 }
 
 exports.clearAccessToken = function (res)
@@ -20,22 +21,62 @@ exports.clearAccessToken = function (res)
 		userId: 0
 	}, PV_KEY);
 
-	res.cookie(COOKIE_NAME, token, { httpOnly: true });
+	res.header(HEADER_NAME, token);
 }
 
-exports.validateAccessToken = function (req)
+exports.validateAccessToken = async function (req, res)
 {
-	if (typeof req.cookies !== 'undefined' && typeof req.cookies[COOKIE_NAME] === 'string') {
+	if (typeof req.headers !== 'undefined' && typeof req.headers[HEADER_NAME] === 'string') {
 		try {
-			let obj = jwt.verify(req.cookies[COOKIE_NAME], PV_KEY, {
+			let obj = jwt.verify(req.headers[HEADER_NAME], PV_KEY, {
 				maxAge: '7 days'
 			});
-			if (obj.userId > 0) {
-				return obj.userId;
+
+			if (obj.userId == -1) { //special admin user
+				let conn;
+
+				try {
+					conn = await Database.connect();
+					let result = await conn.queryAsync('SELECT `id` FROM `users` WHERE `id` = ?;', [ obj.userId ]);
+
+					conn.end();
+					conn = null;
+
+					if (result.length > 0) {
+						//exports.setAccessToken(res, obj.userId);
+						return obj.userId;
+					}
+				}
+				catch (err) {
+					if (conn)
+						conn.destroy();
+				}
+			}
+			else if (obj.userId > 0) {
+				let conn;
+
+				try {
+					conn = await Database.connect();
+					let result = await conn.queryAsync('SELECT COUNT(*) AS `count` FROM `users`;');
+
+					conn.end();
+					conn = null;
+
+					if (result[0].count == 0) {
+						//exports.setAccessToken(res, obj.userId);
+						return obj.userId;
+					}
+				}
+				catch (err) {
+					if (conn)
+						conn.destroy();
+				}
 			}
 		}
 		catch (err) {
 		}
 	}
-	return -1;
+
+	exports.clearAccessToken(res);
+	return 0;
 }

@@ -21,7 +21,7 @@
 	"compounds": [
 		{
 			"name": "Run all",
-			"configurations": ["Run Back-end", "Launch Front-End in Chrome"]
+			"configurations": [ "Run Back-end", "Launch Front-End in Chrome" ]
 		}
 	]
 }

@@ -40,7 +40,7 @@ exports.throwCustom = function (_code, _message, _extra)
 {
 	if (typeof _message === 'object' && typeof _extra === 'undefined') {
 		_extra = _message;
-		delete _message;
+		_message = null;
 	}
 	var err = new Error(_message ? _message : "Custom error");
 	err.type = 'custom';

@@ -6,8 +6,6 @@ import AppWithRouter from './App';
 import { HashRouter } from 'react-router-dom';
 import * as serviceWorker from './serviceWorker';
 
-global.REST_API_URL = "http://localhost:3200/api";
-
 ReactDOM.render(<HashRouter><AppWithRouter /></HashRouter>, document.getElementById('root'));
 
 // If you want your app to work offline and load faster, you can change

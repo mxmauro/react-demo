@@ -2,11 +2,11 @@
 const AccessToken = require('./access_token');
 const Database = require('./database.js');
 const CR = require('./common_responses.js');
-/*
-const Errors = require('./errors.js');
-const Validator = require('./validator.js');
-const Privileges = require('./privileges.js');
 const Helpers = require('./helpers.js');
+const Validator = require('./validator.js');
+const Errors = require('./errors.js');
+/*
+const Privileges = require('./privileges.js');
 const jsSHA = require('./js_sha.js');
 const Entities = require('html-entities').AllHtmlEntities;
 const crypto = require('crypto');
@@ -15,102 +15,72 @@ const moment = require('moment');
 
 exports.login = async function (req, res)
 {
-	//EmployeesModel.login(req.body.email, req.body.password).then((info) => {
-		AccessToken.clearAccessToken(res);
-		CR.sendOk(res);
-	/*}).catch((err) => {
-		AccessToken.clearAccessToken(res);
-		CR.sendAutoError(res, err);
-	});
-	*/
-}
-
-/*
-exports.login = async function (_username, _password)
-{
-	let info;
-
-	var jwt = require('jsonwebtoken');
-
-	if (!Validator.isString(_email)) {
-		Errors.throwInvalidArgument();
-	}
-	_email = Helpers.trim(_email);
-	if (_email != 'admin' && (!Validator.isValidEMail(_email, true, 80))) {
-		Errors.throwInvalidArgument();
-	}
-	//----
-	if (!Validator.checkPassword(_password)) {
-		Errors.throwInvalidArgument();
-	}
-
-	let conn = await Database.connect();
+	let conn;
 
 	try {
-		if (_email != 'admin') {
-			let res = await conn.query('SELECT `id`,`email`,`name`,`password`,`privileges`,`confirmation_date` FROM `employees` WHERE `email` = ?', [
-				_email
+		let info;
+
+		if (!Validator.isString(req.body.name)) {
+			Errors.throwInvalidArgument();
+		}
+		let _name = Helpers.trim(req.body.name);
+		//----
+		if (!Validator.checkPassword(req.body.password)) {
+			Errors.throwInvalidArgument();
+		}
+		let _password = req.body.password.toUpperCase();
+
+		conn = await Database.connect();
+
+		if (_name != 'admin') {
+			let result = await conn.queryAsync('SELECT `id`,`name`,`password` FROM `users` WHERE `name` = ?', [
+				_name
 			]);
-			if (res.length == 0) {
+			if (result.length == 0) {
 				Errors.throwUnauthorized();
 			}
-			if (res[0].email != _email || _password.toUpperCase() != res[0].password.toUpperCase()) {
+			if (result[0].name != _name || _password != result[0].password.toUpperCase()) {
 				Errors.throwUnauthorized();
 			}
-
-			if (!(res[0].confirmation_date)) {
-				Errors.throwCustom('not_activated', {
-					id: res[0].id
-				});
-			}
-
-			let privileges = Privileges.validate(res[0].privileges)
-			if (privileges === false) {
-				Errors.throwUnauthorized();
-			}
-
-			//update last login timestamp
-			await conn.query('UPDATE `employees` SET `last_login_date` = UTC_TIMESTAMP() WHERE `id` = ?', [
-				res[0].id
-			]);
 
 			info = {
-				id: res[0].id,
-				name: res[0].name,
-				privileges: privileges
+				id: result[0].id,
+				name: result[0].name
 			};
 		}
 		else {
-			if (_password.toUpperCase() != '8C6976E5B5410415BDE908BD4DEE15DFB167A9C873FC4BB8A81F6F2AB448A918') { //admin
+			if (_password != '8C6976E5B5410415BDE908BD4DEE15DFB167A9C873FC4BB8A81F6F2AB448A918') { //admin
 				Errors.throwUnauthorized();
 			}
 	
-			//no admin must be registered in order to the 'admin' user to work
-			let res = await conn.query('SELECT `id` FROM `employees` WHERE `privileges` = \'adm\' LIMIT 1');
-			if (res.length > 0) {
+			//no user must be registered in order to the 'admin' user to work
+			let result = await conn.queryAsync('SELECT COUNT(*) AS `count` FROM `users`');
+			if (result[0].count > 0) {
 				Errors.throwUnauthorized();
 			}
 
 			info = {
 				id: -1,
-				name: 'Administrator',
-				privileges: {
-					adm: true
-				}
+				name: 'Administrator'
 			};
 		}
 		
-		conn.destroy();
+		conn.end();
+		conn = null;
+
+		AccessToken.setAccessToken(res, info.id);
+		CR.sendOk(res, info);
 	}
 	catch (err) {
-		conn.destroy();
+		if (conn)
+			conn.destroy();
 
-		throw err;
+		AccessToken.clearAccessToken(res);
+		CR.sendAutoError(res, err);
 	}
-
-	return info;
 }
 
+/*
 exports.getConfirmationEmailInfo = async function (_id)
 {
 	let info;

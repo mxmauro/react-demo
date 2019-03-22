@@ -2,20 +2,24 @@
 
 const util = require('util');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const BodyParser = require('body-parser');
 const MethodOverride = require('method-override');
 const Helmet = require('helmet');
-
+const cors = require('cors');
+ 
 const Users = require('./users');
 
 exports.initialize = async function ()
 {
 	//configure web server
 	let app = express();
+	app.use(cookieParser());
 	app.use(BodyParser.json({ limit: 'npm in5mb' }));
 	app.use(BodyParser.urlencoded({ extended: false, limit: '5mb' }));
 	app.use(MethodOverride());
 	app.use(Helmet());
+	app.use(cors());
 	app.disable('x-powered-by');
 	app.set('trust proxy', 1);
 

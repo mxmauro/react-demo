@@ -29,7 +29,7 @@ exports.connect = async function (useDB)
 
 	//append some methods
 	conn.selectDatabaseAsync = async function () {
-		await this.changeUser({
+		await this.changeUserAsync({
 			database : 'reactdemo_backend'
 		});
 	};
@@ -40,14 +40,18 @@ exports.connect = async function (useDB)
 
 exports.initialize = async function ()
 {
-	let conn = await exports.connect(false);
+	let conn;
+
 	try {
+		conn = await exports.connect(false);
+
 		await conn.selectDatabaseAsync();
 
-		conn.destroy();
+		conn.end();
 	}
 	catch (err) {
-		conn.destroy();
+		if (conn)
+			conn.destroy();
 
 		if (err.errno === 1049) { //ER_BAD_DB_ERROR
 			try {
@@ -80,8 +84,10 @@ exports.isConstraintViolationError = function (err)
 
 async function createDatabase()
 {
-	let conn = exports.connect(false);
+	let conn;
+
 	try {
+		conn = await exports.connect(false);
 		await conn.queryAsync('CREATE DATABASE `reactdemo_backend` DEFAULT CHARACTER SET utf8;');
 
 		await conn.selectDatabaseAsync();
@@ -92,21 +98,22 @@ async function createDatabase()
 		await conn.queryAsync('DROP TABLE IF EXISTS `users`;');
 		await conn.queryAsync('CREATE TABLE `users` (\n' + 
 								'`id` int(10) unsigned NOT NULL AUTO_INCREMENT,\n' +
-								'`username` varchar(80) NOT NULL,\n' +
+								'`name` varchar(80) NOT NULL,\n' +
 								'`password` char(64) NOT NULL,\n' +
 								'`last_modification` datetime NOT NULL,\n' +
 								'PRIMARY KEY (`id`),\n' +
 								'KEY `k_users_name` (`name`)\n' +
 							') ENGINE=InnoDB DEFAULT CHARSET=utf8;\n');
 
-		await conn.queryAsync('INSERT INTO `users` VALUES (?, ?, NOW()));', [
-			'mxmauro', '2961c5a0feb2a8c962decf37230d10a42a74a0b8ca7a38bd0a596f751157845a'
+		await conn.queryAsync('INSERT INTO `users` (`name`,`password`,`last_modification`) VALUES (?, ?, NOW());', [
+			'mxmauro', '2961C5A0FEB2A8C962DECF37230D10A42A74A0B8CA7A38BD0A596F751157845A' //blaster
 		]);
 
-		conn.destroy();
+		conn.end();
 	}
 	catch (err) {
-		conn.destroy();
+		if (conn)
+			conn.destroy();
 
 		throw err;
 	}

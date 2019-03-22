@@ -1,5 +1,6 @@
 import React from 'react';
-declare module 'reactstrap';
+import './declare_modules.d.ts';
+
 import { Collapse, Navbar, NavbarToggler, NavbarBrand, Nav, NavItem, NavLink } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
